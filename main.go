@@ -81,10 +81,12 @@ func (mk makeGray) ServeHTTP(writer http.ResponseWriter, request *http.Request) 
 }
 
 func main() {
-	const addr = "127.0.0.1:8080"
-
 	host := flag.String("host", "https://maps.wikimedia.org", "The origin server against which incoming requests will be proxied")
+	server := flag.String("server", "127.0.0.1", "The server to which requests can be sent")
+	port := flag.String("port", "8080", "The port on the server on which to listen")
 	flag.Parse()
+
+	addr := *server + ":" + *port
 
 	url, err := url.Parse(*host)
 	if err != nil {
