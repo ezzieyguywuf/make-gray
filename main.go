@@ -4,14 +4,36 @@ import (
 	"flag"
 	"log"
 	"net/http"
+	"net/url"
 )
 
 type makeGray struct {
 	domain string
 }
 
-func (makeGray) ServeHTTP(writer http.ResponseWriter, request *http.Request) {
-	log.Printf("%s %s %s", request.RemoteAddr, request.Method, request.URL)
+func (mk makeGray) ServeHTTP(writer http.ResponseWriter, request *http.Request) {
+	target := url.URL{
+		Host: mk.domain,
+		Path: request.URL.Path,
+	}
+
+	fetch := http.Request{
+		Method: "GET",
+		URL:    &target,
+	}
+
+	log.Println("fetching ", target)
+	client := http.Client{Timeout: 5}
+
+	response, err := client.Do(&fetch)
+	if err != nil {
+		// do something
+	}
+
+	// defer response.Body.Close()
+	writer.Write([]byte("<h1>Hello, response</h1>"))
+
+	log.Println("respons: ", response)
 }
 
 func main() {
