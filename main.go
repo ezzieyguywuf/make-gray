@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"io"
 	"log"
 	"net/http"
 	"net/url"
@@ -25,16 +26,22 @@ func (mk makeGray) ServeHTTP(writer http.ResponseWriter, request *http.Request) 
 
 	response, err := client.Do(&fetch)
 	if err != nil {
-		// do something
-		log.Println("Error fetching ", target)
-		log.Println("  ", err)
+		log.Println(err)
 		return
 	}
 
 	defer response.Body.Close()
+
+	data, err := io.ReadAll(response.Body)
+
+	if err != nil {
+		log.Println(err)
+		return
+	}
+
 	writer.Write([]byte("<h1>Hello, response</h1>"))
 
-	log.Println("respons: ", response)
+	log.Println("read ", len(data), "bytes of data")
 }
 
 func main() {
