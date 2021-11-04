@@ -1,3 +1,5 @@
+[![golangci-lint](https://github.com/ezzieyguywuf/make-gray/actions/workflows/golangci-lint.yml/badge.svg)](https://github.com/ezzieyguywuf/make-gray/actions/workflows/golangci-lint.yml)
+
 This is a small http server that will read images from a provided path, convert
 the image to gray, and then serve back the converted image
 
