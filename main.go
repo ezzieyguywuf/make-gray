@@ -102,8 +102,12 @@ func main() {
 	url, err := url.Parse(*host)
 	if err != nil {
 		log.Printf("Invalid target host, %s. Please provide a valid URL", *host)
+		return
 	}
 
 	log.Printf("Starting server on %s, proxying %s", addr, url)
-	http.ListenAndServe(addr, &makeGray{*url})
+	if err := http.ListenAndServe(addr, &makeGray{*url}); err != nil {
+		log.Printf("Unable to start server. Error: %v", err)
+		return
+	}
 }
