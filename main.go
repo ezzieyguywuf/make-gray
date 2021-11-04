@@ -38,6 +38,20 @@ func fetchImage(target url.URL) (image.Image, string, error) {
 	return image.Decode(response.Body)
 }
 
+func transformImage(colorImage image.Image) (greyImage image.Image) {
+	bounds := colorImage.Bounds()
+	min, max := bounds.Min, bounds.Max
+	grayImage := image.NewGray16(bounds)
+
+	for x := min.X; x < max.X; x++ {
+		for y := min.Y; y < max.Y; y++ {
+			grayImage.Set(x, y, colorImage.At(x, y))
+		}
+	}
+
+	return grayImage
+}
+
 func (mk makeGray) ServeHTTP(writer http.ResponseWriter, request *http.Request) {
 	target := mk.host
 	target.Path = request.URL.Path
@@ -48,19 +62,7 @@ func (mk makeGray) ServeHTTP(writer http.ResponseWriter, request *http.Request) 
 		return
 	}
 
-	bounds := imageData.Bounds()
-
-	log.Println("Image bounds = ", bounds, ", format = ", format)
-
-	min, max := bounds.Min, bounds.Max
-	grayImg := image.NewGray16(bounds)
-
-	for x := min.X; x < max.X; x++ {
-		for y := min.Y; y < max.Y; y++ {
-			grayImg.Set(x, y, imageData.At(x, y))
-		}
-	}
-
+	grayImg := transformImage(imageData)
 	buffer := new(bytes.Buffer)
 
 	if format == "png" {
