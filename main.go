@@ -8,11 +8,12 @@ import (
 type makeGray struct{}
 
 func (makeGray) ServeHTTP(writer http.ResponseWriter, request *http.Request) {
-	log.Println(request.RemoteAddr, " ", request.Method, " ", request.URL)
+	log.Printf("%s %s %s", request.RemoteAddr, request.Method, request.URL)
 }
 
 func main() {
-	log.Println("Starting server on 127.0.0.1:8080")
+	const addr = "127.0.0.1:8080"
+	log.Printf("Starting server on %s", addr)
 
-	http.ListenAndServe("127.0.0.1:8080", &makeGray{})
+	http.ListenAndServe(addr, &makeGray{})
 }
