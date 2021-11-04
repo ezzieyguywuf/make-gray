@@ -2,7 +2,9 @@ package main
 
 import (
 	"flag"
-	"io"
+	"image"
+	_ "image/jpeg"
+	_ "image/png"
 	"log"
 	"net/http"
 	"net/url"
@@ -32,7 +34,7 @@ func (mk makeGray) ServeHTTP(writer http.ResponseWriter, request *http.Request) 
 
 	defer response.Body.Close()
 
-	data, err := io.ReadAll(response.Body)
+	imageData, format, err := image.Decode(response.Body)
 
 	if err != nil {
 		log.Println(err)
@@ -41,7 +43,7 @@ func (mk makeGray) ServeHTTP(writer http.ResponseWriter, request *http.Request) 
 
 	writer.Write([]byte("<h1>Hello, response</h1>"))
 
-	log.Println("read ", len(data), "bytes of data")
+	log.Println("Image bounds = ", imageData.Bounds(), ", format = ", format)
 }
 
 func main() {
