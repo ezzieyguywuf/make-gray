@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"errors"
 	"flag"
 	"fmt"
 	"image"
@@ -18,7 +19,8 @@ type makeGray struct {
 	host url.URL
 }
 
-// The returned string will represent the format of the image
+// fetchImage will retrieve an image from the URL. The returned string will
+// contain the format of the image
 func fetchImage(target url.URL) (image.Image, string, error) {
 	fetch := http.Request{
 		Method: "GET",
@@ -29,7 +31,6 @@ func fetchImage(target url.URL) (image.Image, string, error) {
 
 	response, err := client.Do(&fetch)
 	if err != nil {
-		log.Println(err)
 		return image.NewGray16(image.Rect(0, 0, 0, 0)), "", fmt.Errorf("make-grey: could not fetch image from %v", target)
 	}
 
@@ -38,7 +39,9 @@ func fetchImage(target url.URL) (image.Image, string, error) {
 	return image.Decode(response.Body)
 }
 
-func transformImage(colorImage image.Image) (greyImage image.Image) {
+// transformImage will change the incoming image to greyscale and return a
+// buffer that is suitable for transport via HTTP
+func transformImage(colorImage image.Image, format string) (*bytes.Buffer, error) {
 	bounds := colorImage.Bounds()
 	min, max := bounds.Min, bounds.Max
 	grayImage := image.NewGray16(bounds)
@@ -49,7 +52,17 @@ func transformImage(colorImage image.Image) (greyImage image.Image) {
 		}
 	}
 
-	return grayImage
+	buffer := new(bytes.Buffer)
+
+	if format == "png" {
+		err := png.Encode(buffer, grayImage)
+		return buffer, err
+	} else if format == "jpeg" {
+		err := jpeg.Encode(buffer, grayImage, nil)
+		return buffer, err
+	}
+
+	return nil, errors.New("make-gray: I only know how to transform png and jpeg images")
 }
 
 func (mk makeGray) ServeHTTP(writer http.ResponseWriter, request *http.Request) {
@@ -62,23 +75,14 @@ func (mk makeGray) ServeHTTP(writer http.ResponseWriter, request *http.Request) 
 		return
 	}
 
-	grayImg := transformImage(imageData)
-	buffer := new(bytes.Buffer)
+	buffer, err := transformImage(imageData, format)
 
-	if format == "png" {
-		writer.Header().Set("Content-Type", "image/png")
-		if err := png.Encode(buffer, grayImg); err != nil {
-			log.Println("Could not encode image back to png")
-			return
-		}
-	} else if format == "jpeg" {
-		writer.Header().Set("Content-Type", "image/jpeg")
-		if err := jpeg.Encode(buffer, grayImg, nil); err != nil {
-			log.Println("Could not encode image back to jpeg")
-			return
-		}
+	if err != nil {
+		log.Println(err)
+		return
 	}
 
+	writer.Header().Set("Content-Type", "image/"+format)
 	writer.Header().Set("Content-Length", strconv.Itoa(len(buffer.Bytes())))
 
 	if _, err := writer.Write(buffer.Bytes()); err != nil {
