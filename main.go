@@ -30,7 +30,7 @@ func fetchImage(target url.URL) (image.Image, string, error) {
 	response, err := client.Do(&fetch)
 	if err != nil {
 		log.Println(err)
-		return image.NewGray16(image.Rect(0, 0, 0, 0)), "", fmt.Errorf("make-grey: could not fetch image from %s", target)
+		return image.NewGray16(image.Rect(0, 0, 0, 0)), "", fmt.Errorf("make-grey: could not fetch image from %v", target)
 	}
 
 	defer response.Body.Close()
