@@ -1,13 +1,15 @@
 package main
 
 import (
+	"bytes"
 	"flag"
 	"image"
-	_ "image/jpeg"
-	_ "image/png"
+	"image/jpeg"
+	"image/png"
 	"log"
 	"net/http"
 	"net/url"
+	"strconv"
 	"time"
 )
 
@@ -41,9 +43,41 @@ func (mk makeGray) ServeHTTP(writer http.ResponseWriter, request *http.Request) 
 		return
 	}
 
-	writer.Write([]byte("<h1>Hello, response</h1>"))
+	bounds := imageData.Bounds()
 
-	log.Println("Image bounds = ", imageData.Bounds(), ", format = ", format)
+	log.Println("Image bounds = ", bounds, ", format = ", format)
+
+	min, max := bounds.Min, bounds.Max
+	grayImg := image.NewGray16(bounds)
+
+	for x := min.X; x < max.X; x++ {
+		for y := min.Y; y < max.Y; y++ {
+			grayImg.Set(x, y, imageData.At(x, y))
+		}
+	}
+
+	buffer := new(bytes.Buffer)
+
+	if format == "png" {
+		writer.Header().Set("Content-Type", "image/png")
+		if err := png.Encode(buffer, grayImg); err != nil {
+			log.Println("Could not encode image back to png")
+			return
+		}
+	} else if format == "jpeg" {
+		writer.Header().Set("Content-Type", "image/jpeg")
+		if err := jpeg.Encode(buffer, grayImg, nil); err != nil {
+			log.Println("Could not encode image back to jpeg")
+			return
+		}
+	}
+
+	writer.Header().Set("Content-Length", strconv.Itoa(len(buffer.Bytes())))
+
+	if _, err := writer.Write(buffer.Bytes()); err != nil {
+		log.Println("Unable to write image to HTTP response")
+		return
+	}
 }
 
 func main() {
