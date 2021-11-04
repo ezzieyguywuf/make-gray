@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"flag"
+	"fmt"
 	"image"
 	"image/jpeg"
 	"image/png"
@@ -17,10 +18,8 @@ type makeGray struct {
 	host url.URL
 }
 
-func (mk makeGray) ServeHTTP(writer http.ResponseWriter, request *http.Request) {
-	target := mk.host
-	target.Path = request.URL.Path
-
+// The returned string will represent the format of the image
+func fetchImage(target url.URL) (image.Image, string, error) {
 	fetch := http.Request{
 		Method: "GET",
 		URL:    &target,
@@ -31,13 +30,19 @@ func (mk makeGray) ServeHTTP(writer http.ResponseWriter, request *http.Request) 
 	response, err := client.Do(&fetch)
 	if err != nil {
 		log.Println(err)
-		return
+		return image.NewGray16(image.Rect(0, 0, 0, 0)), "", fmt.Errorf("make-grey: could not fetch image from %s", target)
 	}
 
 	defer response.Body.Close()
 
-	imageData, format, err := image.Decode(response.Body)
+	return image.Decode(response.Body)
+}
 
+func (mk makeGray) ServeHTTP(writer http.ResponseWriter, request *http.Request) {
+	target := mk.host
+	target.Path = request.URL.Path
+
+	imageData, format, err := fetchImage(target)
 	if err != nil {
 		log.Println(err)
 		return
