@@ -36,7 +36,7 @@ func fetchImage(target url.URL) (image.Image, string, error) {
 
 	if response.StatusCode < 200 || response.StatusCode >= 300 {
 		log.Printf("make-grey: statusCode %d in fetchImage", response.StatusCode)
-		return image.NewGray16(image.Rect(0, 0, 0, 0)), "", errors.New("Error in HTTP client")
+		return image.NewGray16(image.Rect(0, 0, 0, 0)), "", errors.New("error in HTTP client")
 	}
 
 	defer response.Body.Close()
