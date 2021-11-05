@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"errors"
 	"flag"
-	"fmt"
 	"image"
 	"image/jpeg"
 	"image/png"
@@ -31,12 +30,24 @@ func fetchImage(target url.URL) (image.Image, string, error) {
 
 	response, err := client.Do(&fetch)
 	if err != nil {
-		return image.NewGray16(image.Rect(0, 0, 0, 0)), "", fmt.Errorf("make-grey: could not fetch image from %v", target)
+		log.Printf("make-grey: could not fetch image from %v", target)
+		return image.NewGray16(image.Rect(0, 0, 0, 0)), "", err
+	}
+
+	if response.StatusCode < 200 || response.StatusCode >= 300 {
+		log.Printf("make-grey: statusCode %d in fetchImage", response.StatusCode)
+		return image.NewGray16(image.Rect(0, 0, 0, 0)), "", errors.New("Error in HTTP client")
 	}
 
 	defer response.Body.Close()
 
-	return image.Decode(response.Body)
+	img, status, err := image.Decode(response.Body)
+
+	if err != nil {
+		log.Print("make-grey: unable to decode image")
+	}
+
+	return img, status, err
 }
 
 // transformImage will change the incoming image to greyscale and return a
@@ -71,14 +82,14 @@ func (mk makeGray) ServeHTTP(writer http.ResponseWriter, request *http.Request) 
 
 	imageData, format, err := fetchImage(target)
 	if err != nil {
-		log.Println(err)
+		http.Error(writer, "Unable to fetch image", 400)
 		return
 	}
 
 	buffer, err := transformImage(imageData, format)
 
 	if err != nil {
-		log.Println(err)
+		http.Error(writer, "Unable to transform image", 422)
 		return
 	}
 
@@ -87,6 +98,7 @@ func (mk makeGray) ServeHTTP(writer http.ResponseWriter, request *http.Request) 
 
 	if _, err := writer.Write(buffer.Bytes()); err != nil {
 		log.Println("Unable to write image to HTTP response")
+		http.Error(writer, "Unable to transform image", 500)
 		return
 	}
 }
