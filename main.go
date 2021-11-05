@@ -82,14 +82,14 @@ func (mk makeGray) ServeHTTP(writer http.ResponseWriter, request *http.Request) 
 
 	imageData, format, err := fetchImage(target)
 	if err != nil {
-		http.Error(writer, "Unable to fetch image", 400)
+		http.Error(writer, "Unable to fetch image", http.StatusBadRequest)
 		return
 	}
 
 	buffer, err := transformImage(imageData, format)
 
 	if err != nil {
-		http.Error(writer, "Unable to transform image", 422)
+		http.Error(writer, "Unable to transform image", http.StatusUnprocessableEntity)
 		return
 	}
 
@@ -98,7 +98,7 @@ func (mk makeGray) ServeHTTP(writer http.ResponseWriter, request *http.Request) 
 
 	if _, err := writer.Write(buffer.Bytes()); err != nil {
 		log.Println("Unable to write image to HTTP response")
-		http.Error(writer, "Unable to transform image", 500)
+		http.Error(writer, "Unable to transform image", http.StatusInternalServerError)
 		return
 	}
 }
